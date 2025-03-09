@@ -13,16 +13,21 @@ export interface Message {
   direction: 'incoming' | 'outgoing';
   channel: string;
   content: string;
-  media_urls?: any[];
+  media_urls?: Record<string, unknown>[] | null;
+  intent?: string | null;
+  processed?: boolean;
+  read?: boolean;
+  external_id?: string | null;
   created_at: string;
-  session_id: string;
+  session_id: string | null;
+  message?: Record<string, unknown> | null;
 }
 
 export interface ChatSession {
   id: string;
   client_id: string;
   client?: Client;
-  context?: any;
+  context?: Record<string, unknown> | null;
   active: boolean;
   last_message_at: string;
   created_at: string;

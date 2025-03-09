@@ -32,7 +32,7 @@ export async function getGoogleCalendarClient(userId: string) {
 
   // Handle token refresh
   oauth2Client.on('tokens', async (tokens) => {
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
     if (tokens.access_token) {
       updates.access_token = tokens.access_token;
     }

@@ -14,21 +14,46 @@ interface Property {
 
 interface MultiPropertyCalendarProps {
   properties: Property[];
+  selectedPropertyId?: string | null;
 }
 
-const PROPERTY_COLORS = [
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-purple-500',
-  'bg-orange-500',
-  'bg-pink-500',
-  'bg-teal-500',
-  'bg-red-500',
-  'bg-indigo-500',
-];
+type ViewMode = 'all' | 'available' | 'visits';
 
-export function MultiPropertyCalendar({ properties }: MultiPropertyCalendarProps) {
+// First, extend the TimeSlot type to include visit-specific fields
+interface VisitTimeSlot extends TimeSlot {
+  type: 'visit';
+  client_name?: string;
+  client_id?: string;
+}
+
+const getPropertyColor = (propertyId: string, properties: Property[], isVisit: boolean = false) => {
+  const property = properties.find(p => p.id === propertyId);
+  if (!property) return '';
+  
+  // Extract the color from property.color (assuming format like 'bg-blue-500')
+  const [, baseColor] = property.color.split('-'); // Use comma instead of underscore
+  
+  // Return styles with clear visual distinction
+  return isVisit 
+    ? `bg-${baseColor}-900 opacity-90 z-10 border-2 border-${baseColor}-500 shadow-lg rounded-md ring-2 ring-white ring-opacity-20`
+    : `bg-${baseColor}-50 opacity-30 border border-${baseColor}-200 border-dashed`;
+};
+
+// Update the event display function to use the proper type
+const getEventDisplay = (event: TimeSlot) => {
+  if ('type' in event && event.type === 'visit') {
+    return `👥 Visit - ${(event as VisitTimeSlot).client_name || 'No client name'}`;
+  }
+  return '📅 Available';
+};
+
+export function MultiPropertyCalendar({ 
+  properties,
+  selectedPropertyId,
+}: MultiPropertyCalendarProps) {
   const [schedules, setSchedules] = useState<TimeSlot[]>([]);
+  const [visits, setVisits] = useState<VisitTimeSlot[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingSchedule, setPendingSchedule] = useState<{
@@ -47,14 +72,52 @@ export function MultiPropertyCalendar({ properties }: MultiPropertyCalendarProps
       .select('*')
       .in('property_id', propertyIds);
 
+
     if (!error && data) {
-      setSchedules(data);
+      const formattedSchedules = data.map(schedule => ({
+        ...schedule,
+        className: getPropertyColor(schedule.property_id, properties)
+      }));
+      setSchedules(formattedSchedules);
+    }
+  }, [properties, supabase]);
+
+  const fetchVisits = useCallback(async () => {
+    const propertyIds = properties.map(p => p.id);
+    const { data, error } = await supabase
+      .from('property_visit')
+      .select(`
+        *
+      `)
+      .in('property_id', propertyIds);
+
+      console.log(data);
+
+    if (error) {
+      console.error('Error fetching visits:', error);
+      return;
+    }
+
+    if (data) {
+      const formattedVisits = data.map(visit => ({
+        id: visit.id,
+        property_id: visit.property_id,
+        start_timestamp: visit.start_date,
+        end_timestamp: visit.end_date,
+        status: visit.status,
+        type: 'visit' as const,
+        className: getPropertyColor(visit.property_id.toString(), properties, true),
+        client_name: visit.clients?.name,
+        client_id: visit.client_id
+      }));
+      setVisits(formattedVisits);
     }
   }, [properties, supabase]);
 
   useEffect(() => {
     fetchAllSchedules();
-  }, [fetchAllSchedules]);
+    fetchVisits();
+  }, [fetchAllSchedules, fetchVisits]);
 
   const handleTimeSelect = async (date: string, startTime: string, endTime: string) => {
     setPendingSchedule({
@@ -112,28 +175,90 @@ export function MultiPropertyCalendar({ properties }: MultiPropertyCalendarProps
     }
   };
 
+  const getCurrentEvents = () => {
+    switch (viewMode) {
+      case 'available':
+        return schedules;
+      case 'visits':
+        return visits;
+      default:
+        return [...schedules, ...visits];
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-100">Property Schedules</h3>
-        {isLoading && (
-          <span className="text-sm text-blue-400">Updating availability...</span>
-        )}
+        <div className="flex items-center gap-4">
+          {isLoading && (
+            <span className="text-sm text-blue-400">Updating availability...</span>
+          )}
+          <div className="flex rounded-lg border border-gray-700 overflow-hidden">
+            <button
+              onClick={() => setViewMode('all')}
+              className={`px-4 py-2 text-sm transition-colors ${
+                viewMode === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-400 hover:bg-gray-800'
+              }`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setViewMode('available')}
+              className={`px-4 py-2 text-sm transition-colors ${
+                viewMode === 'available'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-400 hover:bg-gray-800'
+              }`}
+            >
+              Available
+            </button>
+            <button
+              onClick={() => setViewMode('visits')}
+              className={`px-4 py-2 text-sm transition-colors ${
+                viewMode === 'visits'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-400 hover:bg-gray-800'
+              }`}
+            >
+              Visits
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="bg-[#0A1120] p-6 rounded-2xl border border-gray-800 shadow-xl">
         <WeeklyCalendar
-          events={schedules}
+          events={getCurrentEvents()}
+          properties={properties}
+          selectedPropertyId={selectedPropertyId}
           onTimeSelect={handleTimeSelect}
-          className="h-[600px] rounded-xl"
+          getEventDisplay={getEventDisplay}
+          className="h-[800px] rounded-xl"
         />
       </div>
 
-      <div className="flex items-center gap-4 flex-wrap text-sm bg-[#0A1120] p-4 rounded-xl border border-gray-800">
-        {properties.map((property, index) => (
-          <div key={property.id} className="flex items-center gap-2">
-            <div className={`w-4 h-4 rounded-lg ${PROPERTY_COLORS[index % PROPERTY_COLORS.length]}`}></div>
-            <span className="text-gray-200">{property.title}</span>
+      <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+        {properties.map(property => (
+          <div key={property.id} className="space-y-2">
+            {(viewMode === 'all' || viewMode === 'available') && (
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 ${getPropertyColor(property.id, properties)} rounded flex items-center justify-center`}>
+                  <span className="text-xs">📅</span>
+                </div>
+                <span>{property.title} - Available</span>
+              </div>
+            )}
+            {(viewMode === 'all' || viewMode === 'visits') && (
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 ${getPropertyColor(property.id, properties, true)} rounded flex items-center justify-center`}>
+                  <span className="text-xs">👥</span>
+                </div>
+                <span>{property.title} - Visits</span>
+              </div>
+            )}
           </div>
         ))}
       </div>

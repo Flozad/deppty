@@ -1,40 +1,78 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { WeeklyCalendar, TimeSlot } from '@/components/ui/calendar';
+import { useState, useEffect } from 'react';
+import { WeeklyCalendar } from '@/components/ui/calendar';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { PropertySchedule, PropertyVisit, TimeSlot } from '@/types/calendar';
+
+interface Property {
+  id: string;
+  title: string;
+  color: string;
+}
 
 interface PropertyCalendarProps {
-  propertyId: string;
+  properties: Property[]
+  selectedPropertyId?: string | null
+  // ... other props
 }
 
-interface Schedule {
-  id: string;
-  start_timestamp: string;
-  end_timestamp: string;
-  status: string;
-  property_id: string;
-}
-
-export function PropertyCalendar({ propertyId }: PropertyCalendarProps) {
+export function PropertyCalendar({ 
+  properties,
+  selectedPropertyId,
+  // ... other props 
+}: PropertyCalendarProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const supabase = createClientComponentClient();
 
-  const fetchSchedules = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('property_schedules')
-      .select('*')
-      .eq('property_id', propertyId);
-
-    if (!error && data) {
-      setSchedules(data);
-    }
-  }, [propertyId, supabase]);
-
   useEffect(() => {
-    fetchSchedules();
-  }, [propertyId, fetchSchedules]);
+    const fetchData = async () => {
+      if (!selectedPropertyId) return;
+
+      // Fetch schedules
+      const { data: schedulesData, error: schedulesError } = await supabase
+        .from('property_schedules')
+        .select('*')
+        .eq('property_id', selectedPropertyId);
+
+      // Fetch visits
+      const { data: visitsData, error: visitsError } = await supabase
+        .from('property_visit')
+        .select('*')
+        .eq('property_id', selectedPropertyId);
+
+      if (schedulesError || visitsError) {
+        console.error('Error fetching data:', schedulesError || visitsError);
+        return;
+      }
+
+      // Convert schedules to TimeSlots
+      const scheduleSlots: TimeSlot[] = (schedulesData || []).map((schedule: PropertySchedule) => ({
+        id: schedule.id,
+        start_timestamp: schedule.start_timestamp,
+        end_timestamp: schedule.end_timestamp,
+        type: 'schedule',
+        status: schedule.status,
+        className: 'bg-blue-200 opacity-50'
+      }));
+
+      // Convert visits to TimeSlots
+      const visitSlots: TimeSlot[] = (visitsData || []).map((visit: PropertyVisit) => ({
+        id: visit.id,
+        start_timestamp: visit.start_date,
+        end_timestamp: visit.end_date,
+        type: 'visit',
+        status: visit.status,
+        className: 'bg-green-500 opacity-75 z-10' // Higher z-index to show on top
+      }));
+
+      // Combine both types of slots
+      setTimeSlots([...scheduleSlots, ...visitSlots]);
+    };
+
+    fetchData();
+  }, [selectedPropertyId, supabase]);
 
   const handleTimeSelect = async (date: string, startTime: string, endTime: string) => {
     setIsLoading(true);
@@ -47,7 +85,7 @@ export function PropertyCalendar({ propertyId }: PropertyCalendarProps) {
       const { data: existingSchedules, error: checkError } = await supabase
         .from('property_schedules')
         .select('*')
-        .eq('property_id', propertyId)
+        .eq('property_id', selectedPropertyId)
         .gte('start_timestamp', startTimestamp)
         .lte('end_timestamp', endTimestamp);
 
@@ -63,7 +101,7 @@ export function PropertyCalendar({ propertyId }: PropertyCalendarProps) {
       const { data: newSchedule, error } = await supabase
         .from('property_schedules')
         .insert({
-          property_id: propertyId,
+          property_id: selectedPropertyId,
           start_timestamp: startTimestamp,
           end_timestamp: endTimestamp,
           status: 'available'
@@ -77,7 +115,7 @@ export function PropertyCalendar({ propertyId }: PropertyCalendarProps) {
       }
 
       if (newSchedule) {
-        setSchedules(prev => [...prev, newSchedule]);
+        setTimeSlots(prev => [...prev, newSchedule]);
       }
     } catch (error) {
       console.error('Error adding schedule:', error);
@@ -98,16 +136,22 @@ export function PropertyCalendar({ propertyId }: PropertyCalendarProps) {
       
       <div className="bg-[#0A1120] p-6 rounded-2xl border border-gray-800 shadow-xl">
         <WeeklyCalendar
-          events={schedules as TimeSlot[]}
+          events={timeSlots}
+          properties={properties}
+          selectedPropertyId={selectedPropertyId}
           onTimeSelect={handleTimeSelect}
-          className="h-[600px] rounded-xl"
+          className="h-[800px] rounded-xl"
         />
       </div>
 
-      <div className="flex items-center gap-6 text-sm bg-[#0A1120] p-4 rounded-xl border border-gray-800">
+      <div className="flex gap-4 text-sm text-gray-400">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-lg bg-blue-500"></div>
-          <span className="text-gray-200">Available for visits</span>
+          <div className="w-3 h-3 bg-blue-200 opacity-50 rounded"></div>
+          <span>Available Times</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-green-500 opacity-75 rounded"></div>
+          <span>Scheduled Visits</span>
         </div>
       </div>
 

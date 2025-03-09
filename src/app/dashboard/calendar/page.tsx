@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ConnectCalendar } from '@/components/ConnectCalendar';
-import { PropertyCalendar } from '@/components/PropertyCalendar';
+import { MultiPropertyCalendar } from '@/components/MultiPropertyCalendar';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Listing } from '@/types/listing';
 
@@ -47,8 +47,26 @@ export default function CalendarPage() {
     fetchListings();
   }, [supabase]);
 
+  // Convert listings to the format expected by MultiPropertyCalendar
+  const propertyColors = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-purple-500',
+    'bg-orange-500',
+    'bg-pink-500',
+    'bg-teal-500',
+    'bg-red-500',
+    'bg-indigo-500',
+  ];
+
+  const formattedProperties = listings.map((listing, index) => ({
+    id: listing.id,
+    title: listing.title,
+    color: propertyColors[index % propertyColors.length]
+  }));
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       <div className="bg-[#1E293B] rounded-xl p-6 shadow-lg border border-gray-700">
         <h2 className="text-2xl font-semibold text-white mb-6">Calendar Management</h2>
         <ConnectCalendar />
@@ -79,7 +97,7 @@ export default function CalendarPage() {
           <div className="bg-[#1E293B] rounded-xl p-6 shadow-lg border border-gray-700">
             <div className="mb-6">
               <label className="block text-base font-medium text-white mb-2">
-                Select Property
+                Select Property for New Availability
               </label>
               <select
                 value={selectedPropertyId || ''}
@@ -95,11 +113,12 @@ export default function CalendarPage() {
               </select>
             </div>
 
-            {selectedPropertyId && (
-              <div className="mt-6">
-                <PropertyCalendar propertyId={selectedPropertyId} />
-              </div>
-            )}
+            <div className="mt-6">
+              <MultiPropertyCalendar 
+                properties={formattedProperties}
+                selectedPropertyId={selectedPropertyId}
+              />
+            </div>
           </div>
         )}
       </div>
