@@ -24,22 +24,44 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL('/login', request.url))
       }
 
-      if (session && provider_token && provider_refresh_token) {
-        console.log('[Auth Callback] Guardando credenciales del calendario...')
-        // Store the Google Calendar credentials
-        const { error: credentialsError } = await supabase
-          .from('calendar_credentials')
+      if (session) {
+        // Create or update agent profile with default phone number
+        const { error: agentError } = await supabase
+          .from('agents')
           .upsert({
             id: session.user.id,
-            access_token: provider_token,
-            refresh_token: provider_refresh_token,
-            updated_at: new Date().toISOString(),
+            email: session.user.email,
+            first_name: session.user.user_metadata?.full_name?.split(' ')[0] || '',
+            last_name: session.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+            profile_image_url: session.user.user_metadata?.avatar_url,
+            phone: '5491162065154', // Added default phone number
+            active: true,
+            whatsapp_status: 'pending'
+          }, {
+            onConflict: 'id'
           })
 
-        if (credentialsError) {
-          console.error('[Auth Callback] Error al guardar credenciales:', credentialsError)
-        } else {
-          console.log('[Auth Callback] Credenciales guardadas exitosamente')
+        if (agentError) {
+          console.error('[Auth Callback] Error creating agent profile:', agentError)
+        }
+
+        // Store Google Calendar credentials if available
+        if (provider_token && provider_refresh_token) {
+          console.log('[Auth Callback] Guardando credenciales del calendario...')
+          const { error: credentialsError } = await supabase
+            .from('calendar_credentials')
+            .upsert({
+              id: session.user.id,
+              access_token: provider_token,
+              refresh_token: provider_refresh_token,
+              updated_at: new Date().toISOString(),
+            })
+
+          if (credentialsError) {
+            console.error('[Auth Callback] Error al guardar credenciales:', credentialsError)
+          } else {
+            console.log('[Auth Callback] Credenciales guardadas exitosamente')
+          }
         }
       }
 

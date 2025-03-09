@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ConnectCalendar } from '@/components/ConnectCalendar';
 import { MultiPropertyCalendar } from '@/components/MultiPropertyCalendar';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Listing } from '@/types/listing';
@@ -67,52 +66,29 @@ export default function CalendarPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      <div className="bg-[#1E293B] rounded-xl p-6 shadow-lg border border-gray-700">
-        <h2 className="text-2xl font-semibold text-white mb-6">Calendar Management</h2>
-        <ConnectCalendar />
-      </div>
-
       <div className="space-y-6">
         {isLoading ? (
           <div className="bg-[#1E293B] rounded-xl p-8 border border-gray-700">
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-              <span className="ml-3 text-white">Loading properties...</span>
+              <span className="ml-3 text-white">Cargando propiedades...</span>
             </div>
           </div>
         ) : listings.length === 0 ? (
           <div className="bg-[#1E293B] rounded-xl p-8 text-center border border-gray-700">
-            <h3 className="text-xl font-semibold text-white mb-3">No Properties Found</h3>
+            <h3 className="text-xl font-semibold text-white mb-3">No se encontraron propiedades</h3>
             <p className="text-gray-300 mb-6">
-              Add properties in the dashboard to start managing their calendars.
+              Agrega propiedades en el panel de control para empezar a gestionar sus calendarios.
             </p>
             <a 
               href="/dashboard" 
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium"
             >
-              Go to Dashboard
+              Ir al Panel de Control
             </a>
           </div>
         ) : (
           <div className="bg-[#1E293B] rounded-xl p-6 shadow-lg border border-gray-700">
-            <div className="mb-6">
-              <label className="block text-base font-medium text-white mb-2">
-                Select Property for New Availability
-              </label>
-              <select
-                value={selectedPropertyId || ''}
-                onChange={(e) => setSelectedPropertyId(e.target.value)}
-                className="w-full p-3 bg-[#0F172A] border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              >
-                <option value="" disabled className="text-gray-400">Choose a property</option>
-                {listings.map((listing) => (
-                  <option key={listing.id} value={listing.id} className="text-white">
-                    {listing.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div className="mt-6">
               <MultiPropertyCalendar 
                 properties={formattedProperties}

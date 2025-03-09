@@ -134,8 +134,8 @@ export function MultiPropertyCalendar({
     
     setIsLoading(true);
     try {
-      const startTimestamp = new Date(`${pendingSchedule.date}T${pendingSchedule.startTime}`).toISOString();
-      const endTimestamp = new Date(`${pendingSchedule.date}T${pendingSchedule.endTime}`).toISOString();
+      const startTimestamp = `${pendingSchedule.date} ${pendingSchedule.startTime}`;
+      const endTimestamp = `${pendingSchedule.date} ${pendingSchedule.endTime}`;
 
       const { data: existingSchedules } = await supabase
         .from('property_schedules')
@@ -175,24 +175,38 @@ export function MultiPropertyCalendar({
     }
   };
 
+  const addThreeHours = (timestamp: string) => {
+    const date = new Date(timestamp);
+    date.setHours(date.getHours() + 3);
+    return date.toISOString();
+  };
+
   const getCurrentEvents = () => {
+    const transformEvents = (events: (TimeSlot | VisitTimeSlot)[]) => {
+      return events.map(event => ({
+        ...event,
+        start_timestamp: addThreeHours(event.start_timestamp),
+        end_timestamp: addThreeHours(event.end_timestamp)
+      }));
+    };
+
     switch (viewMode) {
       case 'available':
-        return schedules;
+        return transformEvents(schedules);
       case 'visits':
-        return visits;
+        return transformEvents(visits);
       default:
-        return [...schedules, ...visits];
+        return [...transformEvents(schedules), ...transformEvents(visits)];
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-100">Property Schedules</h3>
+        <h3 className="text-lg font-medium text-gray-100">Horarios de Propiedades</h3>
         <div className="flex items-center gap-4">
           {isLoading && (
-            <span className="text-sm text-blue-400">Updating availability...</span>
+            <span className="text-sm text-blue-400">Actualizando disponibilidad...</span>
           )}
           <div className="flex rounded-lg border border-gray-700 overflow-hidden">
             <button
@@ -203,7 +217,7 @@ export function MultiPropertyCalendar({
                   : 'text-gray-400 hover:bg-gray-800'
               }`}
             >
-              All
+              Todos
             </button>
             <button
               onClick={() => setViewMode('available')}
@@ -213,7 +227,7 @@ export function MultiPropertyCalendar({
                   : 'text-gray-400 hover:bg-gray-800'
               }`}
             >
-              Available
+              Disponibles
             </button>
             <button
               onClick={() => setViewMode('visits')}
@@ -223,7 +237,7 @@ export function MultiPropertyCalendar({
                   : 'text-gray-400 hover:bg-gray-800'
               }`}
             >
-              Visits
+              Visitas
             </button>
           </div>
         </div>
@@ -266,15 +280,15 @@ export function MultiPropertyCalendar({
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Schedule</DialogTitle>
+            <DialogTitle>Confirmar Horario</DialogTitle>
             <DialogDescription>
-              Add availability for {pendingSchedule?.date} from {pendingSchedule?.startTime} to {pendingSchedule?.endTime}
+              Agregar disponibilidad para {pendingSchedule?.date} de {pendingSchedule?.startTime} a {pendingSchedule?.endTime}
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-1 gap-2">
-              <label className="text-sm font-medium">Select Property:</label>
+              <label className="text-sm font-medium">Seleccionar Propiedad:</label>
               <select
                 className="bg-slate-800 border border-slate-700 rounded-md p-2"
                 value={pendingSchedule?.propertyId}
@@ -291,10 +305,10 @@ export function MultiPropertyCalendar({
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
-              Cancel
+              Cancelar
             </Button>
             <Button onClick={handleConfirmSchedule} disabled={isLoading}>
-              {isLoading ? 'Adding...' : 'Add Schedule'}
+              {isLoading ? 'Agregando...' : 'Agregar Horario'}
             </Button>
           </DialogFooter>
         </DialogContent>

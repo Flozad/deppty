@@ -20,7 +20,7 @@ const sidebarItems = [
     icon: HomeIcon,
   },
   {
-    name: 'Calendar',
+    name: 'Calendario',
     href: '/dashboard/calendar',
     icon: CalendarIcon,
   },
@@ -93,7 +93,7 @@ export default function DashboardLayout({
             height={40}
             className="drop-shadow-lg"
           />
-          <span className="font-bold text-xl text-white">Portal Agentes</span>
+          <span className="font-bold text-xl text-white">Deppty</span>
         </div>
         
         <nav className="space-y-2 flex-1">

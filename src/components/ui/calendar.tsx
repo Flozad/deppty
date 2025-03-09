@@ -33,6 +33,12 @@ export interface TimeSlot {
   property_id?: string
 }
 
+interface VisitTimeSlot extends TimeSlot {
+  type: 'visit';
+  client_name?: string;
+  client_id?: string;
+}
+
 interface Property {
   id: string;
   title: string;
@@ -79,7 +85,12 @@ export function WeeklyCalendar({
   selectedPropertyId,
   onEventUpdate,
   onEventDelete,
-  getEventDisplay = (event) => event.status,
+  getEventDisplay = (event) => {
+    if ('type' in event && event.type === 'visit') {
+      return `👥 Visita - ${(event as VisitTimeSlot).client_name || 'Sin nombre de cliente'}`;
+    }
+    return '📅 Disponible';
+  },
 }: WeeklyCalendarProps) {
   const [currentWeek, setCurrentWeek] = React.useState(startOfWeek(selectedDate))
   const [isSelecting, setIsSelecting] = React.useState(false)
@@ -326,12 +337,12 @@ export function WeeklyCalendar({
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Schedule</DialogTitle>
+            <DialogTitle>Editar Horario</DialogTitle>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <label className="text-right">Start Time</label>
+              <label className="text-right">Hora de Inicio</label>
               <input
                 type="time"
                 value={editStartTime}
@@ -340,7 +351,7 @@ export function WeeklyCalendar({
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <label className="text-right">End Time</label>
+              <label className="text-right">Hora de Fin</label>
               <input
                 type="time"
                 value={editEndTime}
@@ -361,13 +372,13 @@ export function WeeklyCalendar({
                   setIsEditDialogOpen(false)
                 }}
               >
-                Delete
+                Eliminar
               </Button>
             )}
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline">Cancelar</Button>
             </DialogClose>
-            <Button onClick={handleUpdateEvent}>Save Changes</Button>
+            <Button onClick={handleUpdateEvent}>Guardar Cambios</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
