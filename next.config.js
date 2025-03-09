@@ -4,7 +4,7 @@ const nextConfig = {
   images: {
     domains: [
       'static1.sosiva451.com',
-      // Add other domains if needed
+      'daxdyzuwcdofftlxmpss.supabase.co'
     ],
   },
   experimental: {
