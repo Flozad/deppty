@@ -72,14 +72,16 @@ interface WeeklyCalendarProps {
   getEventDisplay?: (event: TimeSlot) => string
 }
 
+// Change back to full day hours but keep track of default view start
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
+const DEFAULT_START_HOUR = 9 // Used to set initial scroll position
 const TIME_SLOT_HEIGHT = 60 // pixels per hour
 
 export function WeeklyCalendar({
   className,
   selectedDate = new Date(),
   events = [],
-  bookedViews = [], // Add booked views prop
+  bookedViews = [],
   onTimeSelect,
   properties = [],
   selectedPropertyId,
@@ -100,6 +102,15 @@ export function WeeklyCalendar({
   const [editStartTime, setEditStartTime] = React.useState("")
   const [editEndTime, setEditEndTime] = React.useState("")
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeek, i))
+  const timeGridRef = React.useRef<HTMLDivElement>(null);
+  
+  // Add useEffect to set initial scroll position
+  React.useEffect(() => {
+    if (timeGridRef.current) {
+      const scrollPosition = DEFAULT_START_HOUR * TIME_SLOT_HEIGHT;
+      timeGridRef.current.scrollTop = scrollPosition;
+    }
+  }, []);
 
   const handlePreviousWeek = () => {
     setCurrentWeek(prev => subWeeks(prev, 1))
@@ -246,25 +257,49 @@ export function WeeklyCalendar({
       <div className={cn("flex flex-col h-full bg-white dark:bg-slate-900 text-slate-900 dark:text-white", className)}>
         {/* Navigation Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePreviousWeek}
-            className="hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h2 className="text-lg font-semibold">
-            {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
-          </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNextWeek}
-            className="hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousWeek}
+              className="hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="text-lg font-semibold">
+              {format(weekDays[0], 'MMM d')} - {format(weekDays[6], 'MMM d, yyyy')}
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextWeek}
+              className="hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Help tooltip */}
+          <div className="relative group">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-slate-500 dark:text-slate-400"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+              </svg>
+            </Button>
+            <div className="absolute right-0 w-72 p-4 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 invisible group-hover:visible z-50 text-sm">
+              <h4 className="font-semibold mb-2">How to use the calendar:</h4>
+              <ul className="space-y-2 text-slate-600 dark:text-slate-300">
+                <li>• Click and drag to select available time slots</li>
+                <li>• Click on existing events to edit or delete them</li>
+                <li>• Use the view buttons to filter between all events, available slots, or visits</li>
+                <li>• Calendar shows hours from 9am to 11pm</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         {/* Week Header */}
@@ -285,7 +320,7 @@ export function WeeklyCalendar({
         </div>
 
         {/* Time Grid */}
-        <div className="flex flex-1 overflow-y-auto">
+        <div className="flex flex-1 overflow-y-auto" ref={timeGridRef}>
           {/* Time Labels */}
           <div className="w-20 flex-shrink-0">
             {HOURS.map((hour) => (

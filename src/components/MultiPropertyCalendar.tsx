@@ -244,6 +244,17 @@ export function MultiPropertyCalendar({
       </div>
 
       <div className="bg-[#0A1120] p-6 rounded-2xl border border-gray-800 shadow-xl">
+        <div className="mb-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+          <div className="flex items-center gap-3 text-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+            </svg>
+            <span className="font-medium">Cómo agregar disponibilidad:</span>
+          </div>
+          <p className="mt-2 text-sm text-blue-300">
+            Haz clic y arrastra sobre el calendario para seleccionar un rango de horas. Luego, selecciona la propiedad para la cual quieres agregar disponibilidad.
+          </p>
+        </div>
         <WeeklyCalendar
           events={getCurrentEvents()}
           properties={properties}
