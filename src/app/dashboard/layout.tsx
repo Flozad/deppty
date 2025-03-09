@@ -31,6 +31,13 @@ interface User extends Omit<SupabaseUser, 'email' | 'user_metadata'> {
   user_metadata: Record<string, string> | null;
 }
 
+interface Agent {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profile_image_url: string | null;
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -40,6 +47,7 @@ export default function DashboardLayout({
   const supabase = createClientComponentClient();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [agent, setAgent] = useState<Agent | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -51,6 +59,17 @@ export default function DashboardLayout({
       }
 
       setUser(session.user as User);
+
+      // Fetch agent data
+      const { data: agentData, error: agentError } = await supabase
+        .from('agents')
+        .select('id, first_name, last_name, profile_image_url')
+        .eq('email', session.user.email)
+        .single();
+
+      if (!agentError && agentData) {
+        setAgent(agentData);
+      }
     };
 
     checkUser();
@@ -116,9 +135,21 @@ export default function DashboardLayout({
               onClick={() => setIsProfileOpen(!isProfileOpen)}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all duration-200"
             >
-              <UserCircleIcon className="w-10 h-10 text-gray-400" />
+              {agent?.profile_image_url ? (
+                <Image
+                  src={agent.profile_image_url}
+                  alt="Profile"
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <UserCircleIcon className="w-10 h-10 text-gray-400" />
+              )}
               <div className="flex-1 text-left">
-                <div className="font-medium text-white">{user.email}</div>
+                <div className="font-medium text-white">
+                  {agent ? `${agent.first_name} ${agent.last_name}` : user?.email}
+                </div>
                 <div className="text-sm text-gray-400">Agente</div>
               </div>
             </button>
