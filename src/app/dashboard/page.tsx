@@ -241,7 +241,6 @@ export default function Dashboard() {
           status: data.Visible_b ? 'ACTIVE' : 'INACTIVE',
           realestate_type_name: data.TipoPropiedad_t,
           url: `https://www.argenprop.com/${data.DescripcionSeo_t}`,
-          whatsapp: data.TelefonoContacto_t,
           created_date: data.FechaPublicacionAviso_dt,
           modified_date: data.FechaModificacionAviso_dt,
           covered_area: data.SuperficieCubierta_d,
