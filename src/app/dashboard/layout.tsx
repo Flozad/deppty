@@ -136,12 +136,10 @@ export default function DashboardLayout({
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 transition-all duration-200"
             >
               {agent?.profile_image_url ? (
-                <Image
+                <img
                   src={agent.profile_image_url}
                   alt="Profile"
-                  width={40}
-                  height={40}
-                  className="rounded-full object-cover"
+                  className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
                 <UserCircleIcon className="w-10 h-10 text-gray-400" />
